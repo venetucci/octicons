@@ -79,16 +79,50 @@ module.exports = function(grunt) {
     },
 
     svg_sprite: {
-      octicons: {
-        expand: true,
-        cwd: 'lib/svg',
-        src: ['*.svg'],
-        dest: 'build/',
+      large: {
+        files: [{
+          expand: true,
+          cwd: 'lib/svg/l',
+          src: ['*.svg'],
+          dest: 'build/'
+        }],
         options: {
           mode: {
             symbol: {
               dest: "",
-              sprite: "sprite.octicons.svg"
+              sprite: "sprite.octicons.large.svg"
+            }
+          }
+        }
+      },
+      medium: {
+        files: [{
+          expand: true,
+          cwd: 'lib/svg/m',
+          src: ['*.svg'],
+          dest: 'build/'
+        }],
+        options: {
+          mode: {
+            symbol: {
+              dest: "",
+              sprite: "sprite.octicons.medium.svg"
+            }
+          }
+        }
+      },
+      small: {
+        files: [{
+          expand: true,
+          cwd: 'lib/svg/s',
+          src: ['*.svg'],
+          dest: 'build/'
+        }],
+        options: {
+          mode: {
+            symbol: {
+              dest: "",
+              sprite: "sprite.octicons.small.svg"
             }
           }
         }
