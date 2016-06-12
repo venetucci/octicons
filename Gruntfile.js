@@ -38,26 +38,42 @@ module.exports = function(grunt) {
     },
 
     svgmin: {
-      dist: {
-        options: {
-          plugins: [
-            {removeTitle: true},
-            {removeStyleElement: true},
-            {removeAttrs: { attrs: ['id', 'class', 'data-name', 'fill', 'fill-rule'] }},
-            {removeEmptyContainers: true},
-            {sortAttrs: true},
-            {removeUselessDefs: true},
-            {removeEmptyText: true},
-            {removeEditorsNSData: true},
-            {removeEmptyAttrs: true},
-            {removeHiddenElems: true}
-          ]
-        },
+      options: {
+        plugins: [
+          {removeTitle: true},
+          {removeStyleElement: true},
+          {removeAttrs: { attrs: ['id', 'class', 'data-name', 'fill', 'fill-rule'] }},
+          {removeEmptyContainers: true},
+          {sortAttrs: true},
+          {removeUselessDefs: true},
+          {removeEmptyText: true},
+          {removeEditorsNSData: true},
+          {removeEmptyAttrs: true},
+          {removeHiddenElems: true}
+        ]
+      },
+      large: {
         files: [{
           expand: true,
-          cwd: 'lib/svg',
+          cwd: 'lib/svg/l',
           src: ['*.svg'],
-          dest: 'build/svg'
+          dest: 'build/svg/l'
+        }]
+      },
+      medium: {
+        files: [{
+          expand: true,
+          cwd: 'lib/svg/m',
+          src: ['*.svg'],
+          dest: 'build/svg/m'
+        }],
+      },
+      small: {
+        files: [{
+          expand: true,
+          cwd: 'lib/svg/s',
+          src: ['*.svg'],
+          dest: 'build/svg/s'
         }]
       }
     },
