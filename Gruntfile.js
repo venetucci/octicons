@@ -82,7 +82,7 @@ module.exports = function(grunt) {
       large: {
         files: [{
           expand: true,
-          cwd: 'lib/svg/l',
+          cwd: 'build/svg/l',
           src: ['*.svg'],
           dest: 'build/'
         }],
@@ -98,7 +98,7 @@ module.exports = function(grunt) {
       medium: {
         files: [{
           expand: true,
-          cwd: 'lib/svg/m',
+          cwd: 'build/svg/m',
           src: ['*.svg'],
           dest: 'build/'
         }],
@@ -114,7 +114,7 @@ module.exports = function(grunt) {
       small: {
         files: [{
           expand: true,
-          cwd: 'lib/svg/s',
+          cwd: 'build/svg/s',
           src: ['*.svg'],
           dest: 'build/'
         }],
