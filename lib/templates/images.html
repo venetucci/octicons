@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" href="https://unpkg.com/primer-css@9.4.0/build/build.css">
+  </head>
+  <body class="p-responsive py-4 container-md">
+    <h1 class="mb-4">Panocticon</h1>
+
+    <div class="d-flex">
+
+      <div class="mr-4 text-center">
+        {% set url = '{color}/{symbol}@{size}.{format}' %}
+        <a data-href="{{ url }}" class="d-block border bg-white px-4 py-2 mb-4">
+          <div class="text-bold text-gray-dark mb-2">on white</div>
+          <img>
+        </a>
+        <a data-href="{{ url }}" class="d-block border bg-gray-dark px-4 py-2">
+          <div class="text-bold text-white mb-2">on black</div>
+          <img>
+        </a>
+      </div>
+
+      <form id="chooser">
+        <table>
+
+          <tr>
+            <th class="text-right">
+              <label class="m-2" for="symbol">Octicon</label>
+            </th>
+            <td>
+              <select id="symbol" class="form-select input-block m-2">
+                {% for octicon in icons %}
+                  <option>{{ octicon.symbol }}</option>
+                {% endfor %}
+              </select>
+            </td>
+          </tr>
+
+          <tr>
+            <th class="text-right">
+              <label class="m-2" for="color">Color</label>
+            </th>
+            <td>
+              <select id="color" class="form-select input-block m-2">
+                {% for color in colors %}
+                  <option value="{{ color.name }}">{{ color.name }}</option>
+                {% endfor %}
+              </select>
+            </td>
+          </tr>
+
+          <tr>
+            <th class="text-right">
+              <label class="m-2" for="size">Size</label>
+            </th>
+            <td>
+              <select id="size" class="form-select input-block m-2">
+                {% for size in sizes %}
+                  <option value="{{ size }}">{{ size }}x{{ size }}</option>
+                {% endfor %}
+              </select>
+            </td>
+          </tr>
+
+          <tr>
+            <th class="text-right">
+              <label class="m-2" for="format">Format</label>
+            </th>
+            <td>
+              <select id="format" class="form-select input-block m-2">
+                <option value="svg">SVG (vector)</option>
+                <option value="png">PNG (bitmap)</option>
+              </select>
+            </td>
+          </tr>
+
+        </table>
+      </form>
+
+    </div>
+
+    <script>
+      var form = document.getElementById('chooser')
+      var links = document.querySelectorAll('a[data-href]')
+
+      function update() {
+        var values = {}
+        Array.prototype.forEach.call(
+          form.elements,
+          function(input) {
+            values[input.name || input.id] = input.value
+          }
+        )
+        Array.prototype.forEach.call(
+          links,
+          function(link) {
+            var img = link.querySelector('img')
+            var url = link.getAttribute('data-href')
+              .replace(/{(\w+)}/g, function(_, key) {
+                return values[key]
+              })
+            link.href = img.src = url
+            img.width = img.height = values.size || 64
+          }
+        )
+      }
+
+      update()
+
+      form.addEventListener('change', update)
+    </script>
+  </body>
+</html>

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const fse = require('fs-extra')
+const nunjucks = require('nunjucks')
 const octicons = require('..')
 const path = require('path')
 const permutron = require('permutron')
@@ -44,8 +45,15 @@ const generator = (handler) => {
       })
       // finally call the handler with the context
       .then(() => handler(context))
+      .then(results => {
+        if (results) {
+          console.warn('generated %d images', results.length)
+        } else {
+          console.warn('all done!')
+        }
+      })
       .catch(error => {
-        console.error('unable to initialize:', error)
+        console.error('unable to generate:', error)
         process.exit(1)
       })
   }
@@ -91,7 +99,10 @@ const writeIcon = (data, {icon, color, size=64}, ext, outdir) => {
 }
 
 const svgize = (icon, color) => {
-  const svg = icon.toSVG({fill: color.value})
+  const svg = icon.toSVG({
+    xmlns: 'http://www.w3.org/2000/svg',
+    fill: color.value,
+  })
   return Promise.resolve(svg)
 }
 
@@ -101,11 +112,12 @@ const rasterize = buffer => {
 
 const generateSVGs = generator(context => {
   return generateFromMatrix(context, data => {
-    const {icon, color} = data
-    const {outdir} = context
-    return svgize(icon, color)
-      .then(svg => writeIcon(svg, data, 'svg', outdir))
-  })
+      const {icon, color} = data
+      const {outdir} = context
+      return svgize(icon, color)
+        .then(svg => writeIcon(svg, data, 'svg', outdir))
+    })
+    .then(() => generateHTML(context))
 })
 
 const generatePNGs = generator(context => {
@@ -114,6 +126,23 @@ const generatePNGs = generator(context => {
       console.warn('rasterizing %d svgs', svgs.length)
       console.warn(svgs.slice(0, 3), '...')
     })
+    .then(() => generateHTML(context))
+})
+
+const generateHTML = generator(context => {
+  return new Promise((resolve, reject) => {
+    const template = require.resolve('../lib/templates/images.html')
+    console.warn('generating index...')
+    nunjucks.render(template, context, (error, html) => {
+      if (error) {
+        reject(error)
+      } else {
+        const outpath = path.join(context.outdir, 'index.html')
+        console.warn('writing index to', outpath)
+        resolve(fse.writeFile(outpath, html, 'utf8'))
+      }
+    })
+  })
 })
 
 require('yargs')
@@ -135,6 +164,7 @@ require('yargs')
   })
   .command('svg', 'generate colored SVG files', {}, generateSVGs)
   .command('png', 'generate colored PNG files', {}, generatePNGs)
+  .command('html', 'generate the HTML index', {}, generateHTML)
   .demandCommand(1, 'Please provide a command')
   .help()
   .strict(true)
