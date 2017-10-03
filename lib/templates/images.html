@@ -6,7 +6,7 @@
   <body class="p-responsive py-4 container-md">
     <h1 class="mb-2">Panocticon</h1>
 
-    <h4 class="text-gray mb-4">
+    <h4 class="text-gray text-normal mb-4">
       Change the options to see new images, then click to download.
     </h4>
 
@@ -93,6 +93,18 @@
       var links = document.querySelectorAll('a[data-href]')
 
       set('color', 'black')
+
+      if (location.search) {
+        try {
+          var params = new URL(location.href).searchParams
+          Array.from(params.keys()).forEach(function(key) {
+            set(key, params.get(key))
+          })
+        } catch (error) {
+          console.warn('unable to get search params:', error)
+        }
+      }
+
       update()
       form.addEventListener('change', update)
 
@@ -116,6 +128,9 @@
             img.width = img.height = values.size || 64
           }
         )
+        var params = new URLSearchParams(values)
+        var url = '?' + params.toString()
+        history.replaceState(values, '', url)
       }
 
       function set(name, value) {
