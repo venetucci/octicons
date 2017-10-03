@@ -4,6 +4,9 @@ const nunjucks = require('nunjucks')
 const octicons = require('..')
 const path = require('path')
 const permutron = require('permutron')
+const sharp = require('sharp')
+const PromiseQueue = require('p-queue')
+const ObjectAssign = require('object-assign')
 
 const getColors = () => {
   const colorVarsPath = require.resolve(
@@ -29,19 +32,24 @@ const getColors = () => {
 
 const generator = (handler) => {
   return (context) => {
-    console.warn('context:', context)
     delete context._
+    const {limit} = context
+    const _limit = limit > 0
+      ? d => d.slice(0, limit)
+      : d => d
     return Promise.resolve(
         Object.keys(octicons).map(name => octicons[name])
       )
+      .then(_limit)
       .then(icons => {
         console.warn('got %d octicons', icons.length)
-        return Object.assign(context, {icons})
+        return ObjectAssign(context, {icons})
       })
       .then(getColors)
+      .then(_limit)
       .then(colors => {
         console.warn('got %d colors', colors.length)
-        return Object.assign(context, {colors})
+        return ObjectAssign(context, {colors})
       })
       // finally call the handler with the context
       .then(() => handler(context))
@@ -84,55 +92,75 @@ const generateFromMatrix = (context, generate, ext) => {
   })
 }
 
-const writeIcon = (data, {icon, color, size=64}, ext, outdir) => {
-  const filename = `${icon.symbol}@${size}.${ext}`
+const writeIcon = (buffer, {icon, color, size}, ext, outdir) => {
+  const basename = icon.symbol
+  const filename = size
+    ? `${basename}@${size}.${ext}`
+    : `${basename}.${ext}`
   const outfile = path.join(outdir, color.name, filename)
   const outpath = path.dirname(outfile)
-  console.warn(
-    'writing %s @%d filled with %s to:',
-    icon.symbol, size, color.value, outfile
-  )
   return fse.mkdirp(outpath)
-    .then(() => fse.writeFile(outfile, data))
+    .then(() => fse.writeFile(outfile, buffer))
     // resolve with the generated path
     .then(() => outfile)
 }
 
-const svgize = (icon, color) => {
+const svgize = (icon, color, size) => {
   const svg = icon.toSVG({
+    // we need to add the XML namespace for standalone files
     xmlns: 'http://www.w3.org/2000/svg',
     fill: color.value,
+    height: size,
   })
-  return Promise.resolve(svg)
+  return Promise.resolve(`<?xml version="1.0"?>\n${svg}`)
 }
 
-const rasterize = buffer => {
-  console.warn('rasterizing... (NOT IMPLEMENTED)')
+const replaceExt = (filename, ext) => {
+  return filename.replace(/\.\w+$/, ext)
 }
 
-const generateSVGs = generator(context => {
+const rasterize = (svg, size) => {
+  const buffer = new Buffer(svg)
+  return sharp(buffer)
+    .toFormat(sharp.format.png)
+    .toBuffer()
+}
+
+const generateSVGs = context => {
   return generateFromMatrix(context, data => {
       const {icon, color} = data
       const {outdir} = context
+      delete data.size
       return svgize(icon, color)
         .then(svg => writeIcon(svg, data, 'svg', outdir))
+        .then(svg => ObjectAssign(context, {svg}))
     })
-    .then(() => generateHTML(context))
-})
-
-const generatePNGs = generator(context => {
-  return generateSVGs(context)
     .then(svgs => {
-      console.warn('rasterizing %d svgs', svgs.length)
-      console.warn(svgs.slice(0, 3), '...')
+      return generateHTML(context)
+        .then(() => svgs)
     })
-    .then(() => generateHTML(context))
-})
+}
 
-const generateHTML = generator(context => {
+const generatePNGs = context => {
+  const {outdir} = context
+  const queue = new PromiseQueue({concurrency: 3})
+  return generateFromMatrix(context, data => {
+      const {icon, color, size} = data
+      return queue.add(() => {
+        return svgize(icon, color, size)
+          .then(rasterize)
+          .then(png => writeIcon(png, data, 'png', outdir))
+      })
+    })
+    .then(() => queue.onIdle())
+    .then(() => generateHTML(context))
+}
+
+const generateHTML = context => {
   return new Promise((resolve, reject) => {
     const template = require.resolve('../lib/templates/images.html')
     console.warn('generating index...')
+    context.formats = ['svg', 'png']
     nunjucks.render(template, context, (error, html) => {
       if (error) {
         reject(error)
@@ -143,7 +171,7 @@ const generateHTML = generator(context => {
       }
     })
   })
-})
+}
 
 require('yargs')
   .usage('$0 <command> [options]')
@@ -160,11 +188,19 @@ require('yargs')
       describe: 'One or more square sizes in pixels',
       global: true,
       default: [64],
+    },
+    limit: {
+      alias: 'l',
+      type: 'number',
+      describe: 'Limit number of files to output, for debugging',
     }
   })
-  .command('svg', 'generate colored SVG files', {}, generateSVGs)
-  .command('png', 'generate colored PNG files', {}, generatePNGs)
-  .command('html', 'generate the HTML index', {}, generateHTML)
+  .command('svg', 'generate colored SVG files', {},
+           generator(generateSVGs))
+  .command('png', 'generate colored PNG files', {},
+           generator(generatePNGs))
+  .command('html', 'generate the HTML index', {},
+           generator(generateHTML))
   .demandCommand(1, 'Please provide a command')
   .help()
   .strict(true)

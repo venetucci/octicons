@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://unpkg.com/primer-css@9.4.0/build/build.css">
   </head>
   <body class="p-responsive py-4 container-md">
@@ -12,28 +13,13 @@
 
     <div class="d-flex">
 
-      <div class="mr-4 pt-2 text-center">
-        {% set url = '{color}/{symbol}@{size}.{format}' %}
-        <a data-href="{{ url }}" class="d-block border rounded-2 bg-white px-4 pt-1 pb-2 mb-4">
-          <div class="text-bold text-gray-dark mb-2">on white</div>
-          <img>
-        </a>
-        <a data-href="{{ url }}" class="d-block border rounded-2 bg-gray px-4 pt-1 pb-2 my-4">
-          <div class="text-bold text-gray-dark mb-2">on gray</div>
-          <img>
-        </a>
-        <a data-href="{{ url }}" class="d-block border rounded-2 bg-gray-dark px-4 pt-1 pb-2">
-          <div class="text-bold text-white mb-2">on black</div>
-          <img>
-        </a>
-
-      </div>
-
       <form id="chooser">
+        <h3 class="mb-2 text-center">Options</h3>
+
         <table>
 
           <tr>
-            <th class="text-right">
+            <th class="text-left">
               <label class="m-2" for="symbol">octicon</label>
             </th>
             <td>
@@ -46,7 +32,7 @@
           </tr>
 
           <tr>
-            <th class="text-right">
+            <th class="text-left">
               <label class="m-2" for="color">color</label>
             </th>
             <td>
@@ -59,20 +45,21 @@
           </tr>
 
           <tr>
-            <th class="text-right">
+            <th class="text-left">
               <label class="m-2" for="size">size</label>
             </th>
             <td>
               <select id="size" class="form-select input-block m-2">
                 {% for size in sizes %}
-                  <option value="{{ size }}">{{ size }}x{{ size }}</option>
+                  <option value="{{ size }}">{{ size }} px</option>
                 {% endfor %}
               </select>
             </td>
           </tr>
 
+          <!--
           <tr>
-            <th class="text-right">
+            <th class="text-left">
               <label class="m-2" for="format">format</label>
             </th>
             <td>
@@ -82,17 +69,37 @@
               </select>
             </td>
           </tr>
+          -->
 
         </table>
       </form>
+
+      {% for format in formats %}
+      <div class="ml-4 text-center">
+        <h3 class="mb-3">{{ format | upper }}</h3>
+        {% set url = '{color}/{symbol}@{size}.' + format %}
+        {% set link_class = 'd-block no-underline border rounded-2 px-4 pt-1 pb-2' %}
+        <a data-href="{{ url }}" class="{{ link_class }} bg-white mb-4">
+          <div class="text-bold text-gray-dark mb-2">on white</div>
+          <img>
+        </a>
+        <a data-href="{{ url }}" class="{{ link_class }} bg-gray my-4">
+          <div class="text-bold text-gray-dark mb-2">on gray</div>
+          <img>
+        </a>
+        <a data-href="{{ url }}" class="{{ link_class }} bg-gray-dark">
+          <div class="text-bold text-white mb-2">on black</div>
+          <img>
+        </a>
+      </div>
+      {% endfor %}
 
     </div>
 
     <script>
       var form = document.getElementById('chooser')
       var links = document.querySelectorAll('a[data-href]')
-
-      set('color', 'black')
+      var images = document.getElementsByTagName('img')
 
       if (location.search) {
         try {
@@ -103,45 +110,48 @@
         } catch (error) {
           console.warn('unable to get search params:', error)
         }
+      } else {
+        var colors = Array.from(document.elements.color.options)
+        var hasBlack = colors.some(function(option) {
+          return option.value === 'black'
+        })
+        set('color', hasBlack ? 'black' : colors[0].value)
       }
 
       update()
       form.addEventListener('change', update)
 
+      document.addEventListener('error', function(event) {
+        event.target.classList.add('border-red')
+      })
+
       function update() {
         var values = {}
-        Array.prototype.forEach.call(
-          form.elements,
-          function(input) {
-            values[input.name || input.id] = input.value
-          }
-        )
-        Array.prototype.forEach.call(
-          links,
-          function(link) {
-            var img = link.querySelector('img')
-            var url = link.getAttribute('data-href')
-              .replace(/{(\w+)}/g, function(_, key) {
-                return values[key]
-              })
-            link.href = img.src = url
-            img.width = img.height = values.size || 64
-          }
-        )
+        Array.from(form.elements).forEach(function(input) {
+          values[input.name || input.id] = input.value
+        })
+        Array.from(links).forEach(function(link) {
+          var img = link.querySelector('img')
+          var template = link.getAttribute('data-href')
+          var url = template.replace(/{(\w+)}/g, function(_, key) {
+            return values[key]
+          })
+          link.href = img.src = url
+          img.width = values.size
+        })
         var params = new URLSearchParams(values)
         var url = '?' + params.toString()
         history.replaceState(values, '', url)
       }
 
       function set(name, value) {
-        Array.prototype.filter.call(
-          form.elements,
-          function (input) {
+        Array.from(form.elements)
+          .filter(function (input) {
             return input.name === name || input.id === name
-          }
-        ).forEach(function (input) {
-          input.value = value
-        })
+          })
+          .forEach(function (input) {
+            input.value = value
+          })
       }
 
     </script>
