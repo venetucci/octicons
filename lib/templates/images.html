@@ -4,20 +4,29 @@
     <link rel="stylesheet" href="https://unpkg.com/primer-css@9.4.0/build/build.css">
   </head>
   <body class="p-responsive py-4 container-md">
-    <h1 class="mb-4">Panocticon</h1>
+    <h1 class="mb-2">Panocticon</h1>
+
+    <h4 class="text-gray mb-4">
+      Change the options to see new images, then click to download.
+    </h4>
 
     <div class="d-flex">
 
-      <div class="mr-4 text-center">
+      <div class="mr-4 pt-2 text-center">
         {% set url = '{color}/{symbol}@{size}.{format}' %}
-        <a data-href="{{ url }}" class="d-block border bg-white px-4 py-2 mb-4">
+        <a data-href="{{ url }}" class="d-block border rounded-2 bg-white px-4 pt-1 pb-2 mb-4">
           <div class="text-bold text-gray-dark mb-2">on white</div>
           <img>
         </a>
-        <a data-href="{{ url }}" class="d-block border bg-gray-dark px-4 py-2">
+        <a data-href="{{ url }}" class="d-block border rounded-2 bg-gray px-4 pt-1 pb-2 my-4">
+          <div class="text-bold text-gray-dark mb-2">on gray</div>
+          <img>
+        </a>
+        <a data-href="{{ url }}" class="d-block border rounded-2 bg-gray-dark px-4 pt-1 pb-2">
           <div class="text-bold text-white mb-2">on black</div>
           <img>
         </a>
+
       </div>
 
       <form id="chooser">
@@ -25,7 +34,7 @@
 
           <tr>
             <th class="text-right">
-              <label class="m-2" for="symbol">Octicon</label>
+              <label class="m-2" for="symbol">octicon</label>
             </th>
             <td>
               <select id="symbol" class="form-select input-block m-2">
@@ -38,7 +47,7 @@
 
           <tr>
             <th class="text-right">
-              <label class="m-2" for="color">Color</label>
+              <label class="m-2" for="color">color</label>
             </th>
             <td>
               <select id="color" class="form-select input-block m-2">
@@ -51,7 +60,7 @@
 
           <tr>
             <th class="text-right">
-              <label class="m-2" for="size">Size</label>
+              <label class="m-2" for="size">size</label>
             </th>
             <td>
               <select id="size" class="form-select input-block m-2">
@@ -64,7 +73,7 @@
 
           <tr>
             <th class="text-right">
-              <label class="m-2" for="format">Format</label>
+              <label class="m-2" for="format">format</label>
             </th>
             <td>
               <select id="format" class="form-select input-block m-2">
@@ -82,6 +91,10 @@
     <script>
       var form = document.getElementById('chooser')
       var links = document.querySelectorAll('a[data-href]')
+
+      set('color', 'black')
+      update()
+      form.addEventListener('change', update)
 
       function update() {
         var values = {}
@@ -105,9 +118,17 @@
         )
       }
 
-      update()
+      function set(name, value) {
+        Array.prototype.filter.call(
+          form.elements,
+          function (input) {
+            return input.name === name || input.id === name
+          }
+        ).forEach(function (input) {
+          input.value = value
+        })
+      }
 
-      form.addEventListener('change', update)
     </script>
   </body>
 </html>
