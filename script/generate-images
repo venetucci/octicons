@@ -1,0 +1,146 @@
+#!/usr/bin/env node
+const fse = require('fs-extra')
+const octicons = require('..')
+const path = require('path')
+
+const getColors = () => {
+  const colorVarsPath = require.resolve(
+    'primer-support/lib/variables/color-system.scss'
+  )
+
+  const parseVariables = scss => {
+    const matches = scss.match(/\$([-\w]+:\s*#\w+)/g)
+    return Array.from(matches)
+      .slice(1)
+      .map(pair => {
+        if (pair.charAt(0) === '$') {
+          pair = pair.substr(1)
+        }
+        const [name, value] = pair.split(/:\s*/)
+        return {name, value}
+      })
+  }
+
+  return fse.readFile(colorVarsPath, 'utf8')
+    .then(parseVariables)
+}
+
+const generator = (handler) => {
+  return (context) => {
+    console.warn('context:', context)
+    delete context._
+    return Promise.resolve(
+        Object.keys(octicons).map(name => octicons[name])
+      )
+      .then(icons => {
+        console.warn('got %d octicons', icons.length)
+        return Object.assign(context, {icons})
+      })
+      .then(getColors)
+      .then(colors => {
+        console.warn('got %d colors', colors.length)
+        return Object.assign(context, {colors})
+      })
+      .then(({outdir}) => {
+        console.warn('making output directory:', outdir)
+        return fse.mkdirp(outdir)
+      })
+      // finally call the handler with the context
+      .then(() => handler(context))
+      .catch(error => {
+        console.error('unable to initialize:', error)
+        process.exit(1)
+      })
+  }
+}
+
+const generateFromMatrix = (context, generate, ext) => {
+  const {icons, colors} = context
+  const pairs = icons.reduce((acc, icon) => {
+    return acc.concat(
+      colors.map(color => ({icon, color}))
+    )
+  }, [])
+  return Promise.all(pairs.map(generate))
+}
+
+const writeIcon = (data, {icon, color, ext}, outdir) => {
+  const filename = `${icon.symbol}-${color.name}.${ext}`
+  const outfile = path.join(outdir, filename)
+  console.warn(
+    'writing %s filled with %s to:',
+    icon.symbol, color.value, outfile
+  )
+  return fse.writeFile(outfile, data)
+}
+
+const generateSVG = (icon, color) => {
+  const svg = icon.toSVG({fill: color.value})
+  return Promise.resolve(svg)
+}
+
+const generatePNGs = generator(context => {
+  return generateFromMatrix(context, ({icon, color}) => {
+    const {outdir} = context
+    return generateSVG(icon, color)
+      .then(rasterize)
+      .then(png => writeIcon(png, {icon, color, ext: 'png'}, outdir))
+  })
+})
+
+const generateSVGs = generator(context => {
+  return generateFromMatrix(context, ({icon, color}) => {
+    const {outdir} = context
+    return generateSVG(icon, color)
+      .then(svg => writeIcon(svg, {icon, color, ext: 'svg'}, outdir))
+  })
+})
+
+const generateAll = generator(context => {
+  return generateFromMatrix(context, ({icon, color}) => {
+    return generateSVG(icon, color)
+      .then(svg => Promise.all(svg, rasterize(svg)))
+      .then(([svg, png]) => {
+        const {outdir} = context
+        return Promise.all(
+          writeIcon(svg, {icon, color, ext: 'svg'}, outdir),
+          writeIcon(png, {icon, color, ext: 'png'}, outdir)
+        )
+      })
+  }, 'svg')
+})
+
+const commandOptions = {
+  outdir: {
+    alias: 'o',
+    describe: 'the output directory',
+    global: true,
+    default: 'build/images',
+  },
+  sizes: {
+    alias: 's',
+    type: 'array',
+    describe: 'One or more square sizes in pixels',
+    global: true,
+    default: [64],
+  }
+}
+
+require('yargs')
+  .usage('$0 <command> [options]')
+  .command('svg', 'generate colored SVG files',
+    commandOptions,
+    generateSVGs
+  )
+  .command('png', 'generate colored PNG files',
+    commandOptions,
+    generatePNGs
+  )
+  .command('all', 'generate both SVG and PNG files',
+    commandOptions,
+    generateAll
+  )
+  .demandCommand(1, 'Please provide a command')
+  .help()
+  .strict(true)
+  .argv
