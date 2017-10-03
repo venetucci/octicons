@@ -6,24 +6,23 @@
   </head>
   <body class="p-responsive py-4 container-md">
     <h1 class="mb-2">Panocticon</h1>
-
-    <h4 class="text-gray text-normal mb-4">
+    <p class="f4 text-gray mb-4">
       Change the options to see new images, then click to download.
-    </h4>
+    </p>
 
-    <div class="d-flex">
+    <div class="d-block d-md-flex">
 
-      <form id="chooser">
-        <h3 class="mb-2 text-center">Options</h3>
+      <form id="chooser" class="mb-4">
+        <h3 class="mb-2">Options</h3>
 
-        <table>
+        <table class="width-full">
 
           <tr>
-            <th class="text-left">
-              <label class="m-2" for="symbol">octicon</label>
+            <th class="text-left pr-4">
+              <label for="symbol">Octicon</label>
             </th>
             <td>
-              <select id="symbol" class="form-select input-block m-2">
+              <select id="symbol" class="form-select input-block my-2">
                 {% for octicon in icons %}
                   <option>{{ octicon.symbol }}</option>
                 {% endfor %}
@@ -32,11 +31,11 @@
           </tr>
 
           <tr>
-            <th class="text-left">
-              <label class="m-2" for="color">color</label>
+            <th class="text-left pr-4">
+              <label for="color">Color</label>
             </th>
             <td>
-              <select id="color" class="form-select input-block m-2">
+              <select id="color" class="form-select input-block my-2">
                 {% for color in colors %}
                   <option value="{{ color.name }}">{{ color.name }}</option>
                 {% endfor %}
@@ -45,54 +44,37 @@
           </tr>
 
           <tr>
-            <th class="text-left">
-              <label class="m-2" for="size">size</label>
+            <th class="text-left pr-4">
+              <b>Size</b>
             </th>
             <td>
-              <select id="size" class="form-select input-block m-2">
-                {% for size in sizes %}
-                  <option value="{{ size }}">{{ size }} px</option>
-                {% endfor %}
-              </select>
+              {% for size in sizes %}
+                <label class="btn d-inline-block" for="size-{{ size }}">
+                  <span class="text-normal">{{ size }}px</span>
+                  <input id="size-{{ size }}" class="d-none" type="radio" name="size" value="{{ size }}">
+                </label>
+              {% endfor %}
             </td>
           </tr>
-
-          <!--
-          <tr>
-            <th class="text-left">
-              <label class="m-2" for="format">format</label>
-            </th>
-            <td>
-              <select id="format" class="form-select input-block m-2">
-                <option value="svg">SVG (vector)</option>
-                <option value="png">PNG (bitmap)</option>
-              </select>
-            </td>
-          </tr>
-          -->
 
         </table>
+
       </form>
 
-      {% for format in formats %}
-      <div class="ml-4 text-center">
-        <h3 class="mb-3">{{ format | upper }}</h3>
-        {% set url = '{color}/{symbol}@{size}.' + format %}
+      <div class="d-flex ml-md-4 mr-n4">
         {% set link_class = 'd-block no-underline border rounded-2 px-4 pt-1 pb-2' %}
-        <a data-href="{{ url }}" class="{{ link_class }} bg-white mb-4">
-          <div class="text-bold text-gray-dark mb-2">on white</div>
-          <img>
-        </a>
-        <a data-href="{{ url }}" class="{{ link_class }} bg-gray my-4">
-          <div class="text-bold text-gray-dark mb-2">on gray</div>
-          <img>
-        </a>
-        <a data-href="{{ url }}" class="{{ link_class }} bg-gray-dark">
-          <div class="text-bold text-white mb-2">on black</div>
-          <img>
-        </a>
+        {% for format in formats %}
+          <div class="width-full text-center mr-4">
+            <h3 class="mb-3">{{ format.title }}</h3>
+            {% for swatch in swatches %}
+            <a data-href="{{ format.uri }}" class="bg-{{ swatch.bg }} {{ link_class }} {{ swatch.class }}">
+              <div class="text-bold text-{{ swatch.fg }} mb-2">on {{ swatch.bg }}</div>
+              <img>
+            </a>
+            {% endfor %}
+          </div>
+        {% endfor %}
       </div>
-      {% endfor %}
 
     </div>
 
@@ -101,6 +83,7 @@
       var links = document.querySelectorAll('a[data-href]')
       var images = document.getElementsByTagName('img')
 
+      set('size', '{{ sizes[0] }}')
       if (location.search) {
         try {
           var params = new URL(location.href).searchParams
@@ -128,7 +111,9 @@
       function update() {
         var values = {}
         Array.from(form.elements).forEach(function(input) {
-          values[input.name || input.id] = input.value
+          if (input.checked !== false) {
+            values[input.name || input.id] = input.value
+          }
         })
         Array.from(links).forEach(function(link) {
           var img = link.querySelector('img')
@@ -139,6 +124,9 @@
           link.href = img.src = url
           img.width = values.size
         })
+
+        updateSelected('size', values.size)
+
         var params = new URLSearchParams(values)
         var url = '?' + params.toString()
         history.replaceState(values, '', url)
@@ -146,11 +134,24 @@
 
       function set(name, value) {
         Array.from(form.elements)
-          .filter(function (input) {
+          .filter(function(input) {
             return input.name === name || input.id === name
           })
-          .forEach(function (input) {
-            input.value = value
+          .forEach(function(input) {
+            if (input.type === 'radio') {
+              input.checked = input.value == value
+            } else {
+              input.value = value
+            }
+          })
+      }
+
+      function updateSelected(name, value) {
+        var selector = '.btn [name="' + name + '"]'
+        Array.from(form.querySelectorAll(selector))
+          .forEach(function(input) {
+            var button = input.closest('.btn')
+            button.classList.toggle('selected', input.value == value)
           })
       }
 

@@ -32,6 +32,7 @@ const getColors = () => {
 
 const generator = (handler) => {
   return (context) => {
+    console.time('generate')
     delete context._
     const {limit} = context
     const _limit = limit > 0
@@ -54,6 +55,7 @@ const generator = (handler) => {
       // finally call the handler with the context
       .then(() => handler(context))
       .then(results => {
+        console.timeEnd('generate')
         if (results) {
           console.warn('generated %d images', results.length)
         } else {
@@ -131,6 +133,7 @@ const generateSVGs = context => {
       const {icon, color} = data
       const {outdir} = context
       delete data.size
+      console.warn('+ SVG:', JSON.stringify({icon: icon.symbol, color}))
       return svgize(icon, color)
         .then(svg => writeIcon(svg, data, 'svg', outdir))
         .then(svg => ObjectAssign(context, {svg}))
@@ -143,10 +146,11 @@ const generateSVGs = context => {
 
 const generatePNGs = context => {
   const {outdir} = context
-  const queue = new PromiseQueue({concurrency: 3})
+  const queue = new PromiseQueue({concurrency: 8})
   return generateFromMatrix(context, data => {
       const {icon, color, size} = data
       return queue.add(() => {
+        console.warn('+ PNG:', JSON.stringify({icon: icon.symbol, color, size}))
         return svgize(icon, color, size)
           .then(rasterize)
           .then(png => writeIcon(png, data, 'png', outdir))
@@ -160,7 +164,15 @@ const generateHTML = context => {
   return new Promise((resolve, reject) => {
     const template = require.resolve('../lib/templates/images.html')
     console.warn('generating index...')
-    context.formats = ['svg', 'png']
+    context.formats = [
+      {ext: 'svg', title: 'SVG', uri: '{color}/{symbol}.svg'},
+      {ext: 'png', title: 'PNG', uri: '{color}/{symbol}@{size}.png'},
+    ]
+    context.swatches = [
+      {bg: 'white',     fg: 'gray-dark', class: 'mb-4'},
+      {bg: 'gray',      fg: 'gray-dark', class: 'my-4'},
+      {bg: 'gray-dark', fg: 'white'},
+    ]
     nunjucks.render(template, context, (error, html) => {
       if (error) {
         reject(error)
