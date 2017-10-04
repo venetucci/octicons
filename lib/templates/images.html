@@ -7,7 +7,7 @@
   <body class="p-responsive py-4 container-md">
     <h1 class="mb-2">Panocticon</h1>
     <p class="f4 text-gray mb-4">
-      Change the options to see new images, then click to download.
+      Change the options below, then click the images to download.
     </p>
 
     <div class="d-block d-md-flex">
@@ -63,9 +63,15 @@
 
       <div class="d-flex ml-md-4 mr-n4">
         {% set link_class = 'd-block no-underline border rounded-2 px-4 pt-3 pb-2' %}
+        {% set download_icon = 'cloud-download' %}
         {% for format in formats %}
           <div class="width-full text-center mr-4">
-            <h3 class="mb-3">{{ format.title }}</h3>
+            <h3 class="mb-3">
+              <a data-href="{{ format.uri }}" class="text-inherit">
+                {{ octicons[download_icon].toSVG({height: 20, class: 'v-align-center'}) | safe }}
+                {{ format.title }}
+              </a>
+            </h3>
             {% for swatch in swatches %}
             <a data-href="{{ format.uri }}" class="bg-{{ swatch.bg }} {{ link_class }} {{ swatch.class }}">
               <img>
@@ -116,13 +122,16 @@
           }
         })
         Array.from(links).forEach(function(link) {
-          var img = link.querySelector('img')
           var template = link.getAttribute('data-href')
           var url = template.replace(/{(\w+)}/g, function(_, key) {
             return values[key]
           })
-          link.href = img.src = url
-          img.width = values.size
+          link.href = url
+          var img = link.querySelector('img')
+          if (img) {
+            img.src = url
+            img.height = values.size
+          }
         })
 
         updateSelected('size', values.size)
