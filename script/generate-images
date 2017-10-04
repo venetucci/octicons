@@ -164,15 +164,20 @@ const generateHTML = context => {
   return new Promise((resolve, reject) => {
     const template = require.resolve('../lib/templates/images.html')
     console.warn('generating index...')
-    context.formats = [
-      {ext: 'svg', title: 'SVG', uri: '{color}/{symbol}.svg'},
-      {ext: 'png', title: 'PNG', uri: '{color}/{symbol}@{size}.png'},
-    ]
-    context.swatches = [
-      {bg: 'white',     fg: 'gray-dark', class: 'mb-4'},
-      {bg: 'gray',      fg: 'gray-dark', class: 'my-4'},
-      {bg: 'gray-dark', fg: 'white'},
-    ]
+
+    ObjectAssign(context, {
+      octicons,
+      formats: [
+        {ext: 'svg', title: 'SVG', uri: '{color}/{symbol}.svg'},
+        {ext: 'png', title: 'PNG', uri: '{color}/{symbol}@{size}.png'},
+      ],
+      swatches: [
+        {bg: 'white',     fg: 'gray-dark', class: 'mb-4'},
+        {bg: 'gray',      fg: 'gray-dark', class: 'my-4'},
+        {bg: 'gray-dark', fg: 'white'},
+      ]
+    })
+
     nunjucks.render(template, context, (error, html) => {
       if (error) {
         reject(error)
