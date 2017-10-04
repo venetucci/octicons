@@ -49,7 +49,7 @@
             </th>
             <td>
               {% for size in sizes %}
-                <label class="btn d-inline-block" for="size-{{ size }}">
+                <label class="btn d-inline-block" for="size-{{ size }}" tabindex="0">
                   <span class="text-normal">{{ size }}px</span>
                   <input id="size-{{ size }}" class="d-none" type="radio" name="size" value="{{ size }}">
                 </label>
@@ -62,14 +62,14 @@
       </form>
 
       <div class="d-flex ml-md-4 mr-n4">
-        {% set link_class = 'd-block no-underline border rounded-2 px-4 pt-1 pb-2' %}
+        {% set link_class = 'd-block no-underline border rounded-2 px-4 pt-3 pb-2' %}
         {% for format in formats %}
           <div class="width-full text-center mr-4">
             <h3 class="mb-3">{{ format.title }}</h3>
             {% for swatch in swatches %}
             <a data-href="{{ format.uri }}" class="bg-{{ swatch.bg }} {{ link_class }} {{ swatch.class }}">
-              <div class="text-bold text-{{ swatch.fg }} mb-2">on {{ swatch.bg }}</div>
               <img>
+              <div class="text-bold text-{{ swatch.fg }} mt-2">on {{ swatch.bg }}</div>
             </a>
             {% endfor %}
           </div>
