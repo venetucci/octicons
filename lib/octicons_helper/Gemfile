@@ -2,10 +2,9 @@ source "https://rubygems.org"
 
 gemspec
 
+gem "actionpack"
 gem "octicons"
-if (rails_version = ENV["RAILS_VERSION"])
-  gem "rails", "~> #{rails_version}"
-end
+gem "railties"
 
 group :development, :test do
   gem "minitest"
