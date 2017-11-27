@@ -1,5 +1,3 @@
-require "rails"
-
 module OcticonsHelper
   class Railtie < Rails::Railtie
     initializer "octicons_helper.helper" do

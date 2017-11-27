@@ -3,7 +3,9 @@ source "https://rubygems.org"
 gemspec
 
 gem "octicons"
-gem "rails"
+if (rails_version = ENV["RAILS_VERSION"])
+  gem "rails", "~> #{rails_version}"
+end
 
 group :development, :test do
   gem "minitest"
