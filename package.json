@@ -8,7 +8,7 @@
     "release": "script/clean && $(npm bin)/lerna publish --exact --since \"v$(npm info octicons version)\""
   },
   "figma": {
-    "url": "https://www.figma.com/file/MYbHBjzkvMk585e32m6BMObi/Octicons"
+    "url": "https://www.figma.com/file/PMpMOQIwEu6br2UYbLOq6L/Octicons"
   },
   "lint-staged": {
     "octicons-master.sketch": [
